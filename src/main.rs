@@ -47,6 +47,12 @@ async fn main() {
     // API key
     let api_key = "EDACCDA1-BCA9-4565-9F7B-32CEB779A524";
 
+    // Asset IDs to track
+    let asset_ids = vec![
+        "BTC", "ETH", "XRP", "BCH", "ADA",
+        "LTC", "LINK", "XLM", "DOT", "SOL"
+    ];
+
     // Broadcast channel for price updates
     let (tx, _) = broadcast::channel(100);
 
@@ -64,24 +70,32 @@ async fn main() {
     // Combine routes
     let routes = ws_route;
 
-    // Start periodic price fetching
-    tokio::spawn(async move {
-        let mut interval = time::interval(Duration::from_secs(5));
-        let asset_id = "BTC"; // Replace with the desired asset ID
-        loop {
-            interval.tick().await;
-            if let Ok(price) = fetch_price(&api_key, asset_id).await {
-                let price_update = PriceUpdate {
-                    asset_id: asset_id.to_string(),
-                    price,
-                };
-                // Send price update through the broadcast channel
-                if let Err(e) = tx.send(price_update.clone()) {
-                    eprintln!("Price update: {:?}", e);
+    // Start periodic price fetching for each asset ID
+    let price_fetch_tasks: Vec<_> = asset_ids.into_iter().map(|asset_id| {
+        let api_key = api_key.to_string();
+        let tx = tx.clone();
+        tokio::spawn(async move {
+            let mut interval = time::interval(Duration::from_secs(5)); // Fetch every 5 seconds
+            loop {
+                interval.tick().await;
+                if let Ok(price) = fetch_price(&api_key, &asset_id).await {
+                    let price_update = PriceUpdate {
+                        asset_id: asset_id.to_string(),
+                        price,
+                    };
+                    // Send price update through the broadcast channel
+                    if let Err(e) = tx.send(price_update.clone()) {
+                        eprintln!("Price update error: {:?}", e);
+                    }
                 }
             }
-        }
-    });
+        })
+    }).collect();
+
+    // Spawn tasks to fetch prices concurrently
+    for task in price_fetch_tasks {
+        task.await.unwrap();
+    }
 
     // Start the server
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;

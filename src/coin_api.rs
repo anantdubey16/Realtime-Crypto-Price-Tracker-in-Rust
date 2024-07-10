@@ -1,22 +1,23 @@
-use reqwest::Client;
+use reqwest::Error;
 use serde::Deserialize;
-use std::error::Error;
 
-#[derive(Debug, Deserialize)]
-struct CoinAPIResponse {
+#[derive(Deserialize)]
+struct CoinApiResponse {
     rate: f64,
 }
 
-pub async fn fetch_price(api_key: &str, asset_id: &str) -> Result<f64, Box<dyn Error>> {
-    let client = Client::new();
-    let url = format!("https://rest.coinapi.io/v1/exchangerate/{}/USD", asset_id);
-    let resp = client
+pub async fn fetch_price(api_key: &str, asset_id: &str) -> Result<f64, Error> {
+    let url = format!(
+        "https://rest.coinapi.io/v1/exchangerate/{}/USD",
+        asset_id
+    );
+    let client = reqwest::Client::new();
+    let response = client
         .get(&url)
         .header("X-CoinAPI-Key", api_key)
         .send()
         .await?
-        .json::<CoinAPIResponse>()
+        .json::<CoinApiResponse>()
         .await?;
-    
-    Ok(resp.rate)
+    Ok(response.rate)
 }

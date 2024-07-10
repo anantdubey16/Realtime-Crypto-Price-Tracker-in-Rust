@@ -2,6 +2,9 @@
 
 Rust Crypto Tracker is a real-time cryptocurrency price monitoring server built with Rust. This project uses the CoinAPI to fetch prices for multiple cryptocurrencies and broadcasts these updates to connected clients via WebSockets.
 
+![image](https://github.com/anantdubey16/Realtime-Crypto-Price-Tracker-in-Rust/assets/81023294/8830b2c0-7f0b-42cb-9640-4122df1eab21)
+
+
 ## Features
 
 - Real-time cryptocurrency price updates

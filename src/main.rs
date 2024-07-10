@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use futures_util::{StreamExt, SinkExt};
 use warp::ws::Message;
 use tokio::time::{self, Duration};
+use std::env;
+use dotenv::dotenv;
 
 mod coin_api;
 use coin_api::fetch_price;
@@ -44,8 +46,11 @@ async fn handle_connection(
 
 #[tokio::main]
 async fn main() {
-    // API key
-    let api_key = "EDACCDA1-BCA9-4565-9F7B-32CEB779A524";
+    // Load environment variables from .env file
+    dotenv().ok();
+
+    // Read API key from environment variable
+    let api_key = env::var("COIN_API_KEY").expect("COIN_API_KEY must be set");
 
     // Asset IDs to track
     let asset_ids = vec![

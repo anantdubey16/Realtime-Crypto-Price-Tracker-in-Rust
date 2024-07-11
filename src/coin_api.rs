@@ -16,8 +16,12 @@ pub async fn fetch_price(api_key: &str, asset_id: &str) -> Result<f64, Error> {
         .get(&url)
         .header("X-CoinAPI-Key", api_key)
         .send()
-        .await?
-        .json::<CoinApiResponse>()
         .await?;
-    Ok(response.rate)
+    
+    if response.status().is_success() {
+        let coin_response = response.json::<CoinApiResponse>().await?;
+        Ok(coin_response.rate)
+    } else {
+        Err(Error::from(response.error_for_status().unwrap_err()))
+    }
 }

@@ -83,14 +83,21 @@ async fn main() {
             let mut interval = time::interval(Duration::from_secs(5)); // Fetch every 5 seconds
             loop {
                 interval.tick().await;
-                if let Ok(price) = fetch_price(&api_key, &asset_id).await {
-                    let price_update = PriceUpdate {
-                        asset_id: asset_id.to_string(),
-                        price,
-                    };
-                    // Send price update through the broadcast channel
-                    if let Err(e) = tx.send(price_update.clone()) {
-                        eprintln!("Price update error: {:?}", e);
+                match fetch_price(&api_key, &asset_id).await {
+                    Ok(price) => {
+                        let price_update = PriceUpdate {
+                            asset_id: asset_id.to_string(),
+                            price,
+                        };
+                        // Send price update through the broadcast channel
+                        if let Err(e) = tx.send(price_update.clone()) {
+                            eprintln!("Price update error: {:?}", e);
+                        } else {
+                            println!("Sent price update: {:?}", price_update);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to fetch price for {}: {:?}", asset_id, e);
                     }
                 }
             }
@@ -102,6 +109,7 @@ async fn main() {
         task.await.unwrap();
     }
 
+    println!("Starting the server...");
     // Start the server
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }

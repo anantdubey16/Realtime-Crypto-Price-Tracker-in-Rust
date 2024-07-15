@@ -54,8 +54,8 @@ async fn main() {
 
     // Asset IDs to track
     let asset_ids = vec![
-        "BTC", "ETH", "XRP", "BCH", "ADA",
-        "LTC", "LINK", "XLM", "DOT", "SOL"
+        "BTC", "ETH"
+        
     ];
 
     // Broadcast channel for price updates
@@ -80,7 +80,8 @@ async fn main() {
         let api_key = api_key.to_string();
         let tx = tx.clone();
         tokio::spawn(async move {
-            let mut interval = time::interval(Duration::from_secs(5)); // Fetch every 5 seconds
+            let mut interval = time::interval(Duration::from_secs(10)); // Fetch every 10 seconds
+            let mut backoff = Duration::from_secs(10);
             loop {
                 interval.tick().await;
                 match fetch_price(&api_key, &asset_id).await {
@@ -90,14 +91,22 @@ async fn main() {
                             price,
                         };
                         // Send price update through the broadcast channel
-                        if let Err(e) = tx.send(price_update.clone()) {
-                            eprintln!("Price update error: {:?}", e);
+                        if let Err(_) = tx.send(price_update.clone()) {
+                            println!("{:?}", price_update);
                         } else {
                             println!("Sent price update: {:?}", price_update);
                         }
+                        // Reset backoff on successful fetch
+                        backoff = Duration::from_secs(5);
                     }
                     Err(e) => {
                         eprintln!("Failed to fetch price for {}: {:?}", asset_id, e);
+                        // Apply exponential backoff on error
+                        interval = time::interval(backoff);
+                        backoff *= 2;
+                        if backoff > Duration::from_secs(60) {
+                            backoff = Duration::from_secs(60);
+                        }
                     }
                 }
             }

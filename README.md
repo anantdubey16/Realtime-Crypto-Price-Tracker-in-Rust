@@ -73,3 +73,6 @@ This file handles communication with the CoinAPI:
       "asset_id": "BTC",
       "price": 45000.0
   }
+  ```
+  ![image](https://github.com/user-attachments/assets/2fa66933-7dd2-4934-881f-9747c4c55dfb)
+
